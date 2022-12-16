@@ -144,7 +144,7 @@ class ApiBookmarkView(MethodView):
             create_bookmarks_form.tags.data,
             create_bookmarks_form.description.data
         )
-        return to_response(result_flag != -1)
+        return to_response(result_flag)
 
     def put(self, rec_id: int):
         bukudb = getattr(flask.g, 'bukudb', get_bukudb())
@@ -171,7 +171,7 @@ class ApiBookmarkRangeView(MethodView):
 
     def get(self, starting_id: int, ending_id: int):
         bukudb = getattr(flask.g, 'bukudb', get_bukudb())
-        max_id = bukudb.get_max_id()
+        max_id = bukudb.get_max_id() or 0
         if starting_id > max_id or ending_id > max_id:
             return response_bad()
         result = {'bookmarks': {}}  # type: ignore
@@ -187,7 +187,7 @@ class ApiBookmarkRangeView(MethodView):
 
     def put(self, starting_id: int, ending_id: int):
         bukudb = getattr(flask.g, 'bukudb', get_bukudb())
-        max_id = bukudb.get_max_id()
+        max_id = bukudb.get_max_id() or 0
         if starting_id > max_id or ending_id > max_id:
             return response_bad()
         for i in range(starting_id, ending_id + 1, 1):
@@ -204,7 +204,7 @@ class ApiBookmarkRangeView(MethodView):
 
     def delete(self, starting_id: int, ending_id: int):
         bukudb = getattr(flask.g, 'bukudb', get_bukudb())
-        max_id = bukudb.get_max_id()
+        max_id = bukudb.get_max_id() or 0
         if starting_id > max_id or ending_id > max_id:
             return response_bad()
         idx = min([starting_id, ending_id])
