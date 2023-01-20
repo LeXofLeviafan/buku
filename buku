@@ -53,10 +53,7 @@ from urllib3.util import Retry, make_headers, parse_url
 
 # note catch ModuleNotFoundError instead Exception
 # when python3.5 not supported
-try:
-    import readline
-except Exception:
-    import pyreadline as readline  # type: ignore
+# Note: readline/pyreadline3 is only needed in main()
 try:
     from mypy_extensions import TypedDict
 except ImportError:
@@ -5330,6 +5327,11 @@ def monkeypatch_textwrap_for_cjk():
 def main():
     """Main."""
     global ID_STR, ID_DB_STR, MUTE_STR, URL_STR, DESC_STR, DESC_WRAP, TAG_STR, TAG_WRAP, PROMPTMSG
+    # this import is only necessary when buku is used interactively/as a CLI tool
+    try:
+        import readline
+    except Exception:
+        import pyreadline3 as readline  # type: ignore
 
     title_in = None
     tags_in = None

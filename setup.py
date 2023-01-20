@@ -68,6 +68,8 @@ setup(
         'cryptography>=1.2.3',
         'urllib3>=1.23',
         'html5lib>=1.0.1',
+        'pyreadline3; platform_system=="Windows"',
+        'certifi; platform_system=="Windows"',
     ],
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
