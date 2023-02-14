@@ -20,7 +20,7 @@ from genericpath import exists
 from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
-from buku import BukuDb, parse_tags, prompt
+from buku import BukuDb, parse_tags, prompt, FLAG_NONE, FLAG_IMMUTABLE
 
 
 def get_temp_dir_path():
@@ -1084,43 +1084,44 @@ def test_add_rec_add_invalid_url(caplog, url):
 @pytest.mark.parametrize(
     "kwargs, exp_arg",
     [
-        [{"url": "example.com"}, ("example.com", "Example Domain", ",", "", False)],
+        [{"url": "example.com"}, ("example.com", "Example Domain", ",", "", FLAG_NONE)],
         [
             {"url": "http://example.com"},
-            ("http://example.com", "Example Domain", ",", "", False),
+            ("http://example.com", "Example Domain", ",", "", FLAG_NONE),
         ],
         [
             {"url": "http://example.com", "immutable": True},
-            ("http://example.com", "Example Domain", ",", "", True),
+            ("http://example.com", "Example Domain", ",", "", FLAG_IMMUTABLE),
         ],
         [
             {"url": "http://example.com", "desc": "randomdesc"},
-            ("http://example.com", "Example Domain", ",", "randomdesc", False),
+            ("http://example.com", "Example Domain", ",", "randomdesc", FLAG_NONE),
         ],
         [
             {"url": "http://example.com", "title_in": "randomtitle"},
-            ("http://example.com", "randomtitle", ",", "", False),
+            ("http://example.com", "randomtitle", ",", "", FLAG_NONE),
         ],
         [
             {"url": "http://example.com", "tags_in": "tag1"},
-            ("http://example.com", "Example Domain", ",tag1,", "", False),
+            ("http://example.com", "Example Domain", ",tag1,", "", FLAG_NONE),
         ],
         [
             {"url": "http://example.com", "tags_in": ",tag1"},
-            ("http://example.com", "Example Domain", ",tag1,", "", False),
+            ("http://example.com", "Example Domain", ",tag1,", "", FLAG_NONE),
         ],
         [
             {"url": "http://example.com", "tags_in": ",tag1,"},
-            ("http://example.com", "Example Domain", ",tag1,", "", False),
+            ("http://example.com", "Example Domain", ",tag1,", "", FLAG_NONE),
         ],
     ],
 )
-def test_add_rec_exec_arg(kwargs, exp_arg):
+def test_add_rec_exec_arg(kwargs, exp_arg, monkeypatch):
     """test func."""
+    monkeypatch.setattr('buku.network_handler', lambda url: ('Example Domain', None, None, 0, 0))
     bdb = BukuDb()
     bdb.cur = mock.Mock()
     bdb.get_rec_id = mock.Mock(return_value=None)
-    bdb.add_rec(**kwargs)
+    bdb.add_rec(**kwargs, fetch=True)
     assert bdb.cur.execute.call_args[0][1] == exp_arg
 
 

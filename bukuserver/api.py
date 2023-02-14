@@ -136,8 +136,8 @@ class ApiBookmarkView(MethodView):
             url_data,
             create_bookmarks_form.title.data,
             create_bookmarks_form.tags.data,
-            create_bookmarks_form.description.data
-        )
+            create_bookmarks_form.description.data,
+            fetch=True)
         return to_response(result_flag)
 
     def put(self, rec_id: int):

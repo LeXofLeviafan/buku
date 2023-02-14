@@ -374,6 +374,14 @@ class BukuCrypt:
             sys.exit(1)
 
 
+class BookmarkData(NamedTuple):
+    """Bookmark data to be passed to add_rec()"""
+    url: str
+    title: Optional[str] = None
+    tags_raw: Optional[str] = None
+    desc: Optional[str] = None
+    immutable: bool = False
+
 class BookmarkVar(NamedTuple):
     """Bookmark data named tuple"""
     id: int
@@ -614,8 +622,9 @@ class BukuDb:
             tags_in: Optional[str] = None,
             desc: Optional[str] = None,
             immutable: bool = False,
+            *,
             delay_commit: bool = False,
-            fetch: bool = True) -> int:
+            fetch: bool = False) -> int:
         """Add a new bookmark.
 
         Parameters
@@ -635,7 +644,7 @@ class BukuDb:
             True if record should not be committed to the DB,
             leaving commit responsibility to caller. Default is False.
         fetch : bool
-            Fetch page from web and parse for data
+            If true, fetch page from web and parse for data.
 
         Returns
         -------
@@ -2295,7 +2304,7 @@ class BukuDb:
 
         Returns
         -------
-        tuple
+        BookmarkData
             Bookmark record data.
         """
 
@@ -2320,7 +2329,7 @@ class BukuDb:
                     tags += folder_name
                 if unique_tag:
                     tags += DELIM + unique_tag
-                yield (item['url'], item['name'], parse_tags([tags]), None, 0, True, False)
+                yield BookmarkData(item['url'], item['name'], parse_tags([tags]))
 
     def load_chrome_database(self, path, unique_tag, add_parent_folder_as_tag):
         """Open Chrome Bookmarks JSON file and import data.
@@ -2343,12 +2352,12 @@ class BukuDb:
             # Needed to skip 'sync_transaction_version' key from roots
             if isinstance(roots[entry], str):
                 continue
-            for item in self.traverse_bm_folder(
+            for bookmark in self.traverse_bm_folder(
                     roots[entry]['children'],
                     unique_tag,
                     roots[entry]['name'],
                     add_parent_folder_as_tag):
-                self.add_rec(*item)
+                self.add_rec(*bookmark, delay_commit=True)
 
     def load_firefox_database(self, path, unique_tag, add_parent_folder_as_tag):
         """Connect to Firefox sqlite db and import bookmarks into BukuDb.
@@ -2407,7 +2416,7 @@ class BukuDb:
             # get the title
             title = row[2] or ''
 
-            self.add_rec(url, title, tags, None, 0, True, False)
+            self.add_rec(*BookmarkData(url, title, tags), delay_commit=True)
         try:
             cur.close()
             conn.close()
@@ -2435,12 +2444,12 @@ class BukuDb:
             # Needed to skip 'sync_transaction_version' key from roots
             if isinstance(roots[entry], str):
                 continue
-            for item in self.traverse_bm_folder(
+            for bookmark in self.traverse_bm_folder(
                     roots[entry]['children'],
                     unique_tag,
                     roots[entry]['name'],
                     add_parent_folder_as_tag):
-                self.add_rec(*item)
+                self.add_rec(*bookmark, delay_commit=True)
 
     def auto_import_from_browser(self):
         """Import bookmarks from a browser default database file.
@@ -2612,11 +2621,11 @@ class BukuDb:
                 newtag = gen_auto_tag()
             append_tags_resp = input('Append tags when bookmark exist? (y/n): ')
 
-        items = []
+        bookmarks = []
         if filepath.endswith('.md'):
-            items = import_md(filepath=filepath, newtag=newtag)
+            bookmarks = import_md(filepath=filepath, newtag=newtag)
         elif filepath.endswith('org'):
-            items = import_org(filepath=filepath, newtag=newtag)
+            bookmarks = import_org(filepath=filepath, newtag=newtag)
         elif filepath.endswith('json'):
             if not tacit:
                 resp = input('Add parent folder names as tags? (y/n): ')
@@ -2627,7 +2636,7 @@ class BukuDb:
                 with open(filepath, 'r', encoding='utf-8') as datafile:
                     data = json.load(datafile)
 
-                items = import_firefox_json(data, add_bookmark_folder_as_tag, newtag)
+                bookmarks = import_firefox_json(data, add_bookmark_folder_as_tag, newtag)
             except ValueError as e:
                 LOGERR("ff_json: JSON Decode Error: {}".format(e))
                 return False
@@ -2659,7 +2668,7 @@ n: don't add parent folder as tag
                 add_parent_folder_as_tag = True
                 use_nested_folder_structure = True
 
-            items = import_xbel(soup, add_parent_folder_as_tag, newtag, use_nested_folder_structure)
+            bookmarks = import_xbel(soup, add_parent_folder_as_tag, newtag, use_nested_folder_structure)
             infp.close()
         else:
             try:
@@ -2688,14 +2697,14 @@ n: don't add parent folder as tag
                 if resp == 'a':
                     use_nested_folder_structure = True
 
-            items = import_html(soup, add_parent_folder_as_tag, newtag, use_nested_folder_structure)
+            bookmarks = import_html(soup, add_parent_folder_as_tag, newtag, use_nested_folder_structure)
             infp.close()
 
-        for item in items:
-            add_rec_res = self.add_rec(*item)
+        for bookmark in bookmarks:
+            add_rec_res = self.add_rec(*bookmark, delay_commit=True)
             if not add_rec_res and append_tags_resp == 'y':
-                rec_id = self.get_rec_id(item[0])
-                self.append_tag_at_index(rec_id, item[2])
+                rec_id = self.get_rec_id(bookmark.url)
+                self.append_tag_at_index(rec_id, bookmark.tags_raw)
 
         self.conn.commit()
 
@@ -2731,7 +2740,7 @@ n: don't add parent folder as tag
         resultset = indb_cur.fetchall()
         if resultset:
             for row in bookmark_vars(resultset):
-                self.add_rec(row.url, row.title, row.tags_raw, row.desc, row.flags, True, False)
+                self.add_rec(row.url, row.title, row.tags_raw, row.desc, row.immutable, delay_commit=True)
 
             self.conn.commit()
 
@@ -3208,7 +3217,7 @@ def import_md(filepath: str, newtag: Optional[str]):
 
     Returns
     -------
-    tuple
+    BookmarkData
         Parsed result.
     """
     with open(filepath, mode='r', encoding='utf-8') as infp:
@@ -3245,7 +3254,7 @@ def import_md(filepath: str, newtag: Optional[str]):
 
                     parse_tags([tags])
 
-                    yield (url, title, delim_wrap(tags), None, 0, True, False)
+                    yield BookmarkData(url, title, delim_wrap(tags))
 
 def import_org(filepath: str, newtag: Optional[str]):
     """Parse bookmark org file.
@@ -3259,7 +3268,7 @@ def import_org(filepath: str, newtag: Optional[str]):
 
     Returns
     -------
-    tuple
+    BookmarkData
         Parsed result.
     """
     def get_org_tags(tag_string):
@@ -3320,7 +3329,7 @@ def import_org(filepath: str, newtag: Optional[str]):
                         if newtag.lower() not in tags:
                             tags_string = (newtag + DELIM) + tags_string
 
-                    yield (url, title, delim_wrap(tags_string), None, 0, True, False)
+                    yield BookmarkData(url, title, delim_wrap(tags_string))
 
 def import_firefox_json(json, add_bookmark_folder_as_tag=False, unique_tag=None):
     """Open Firefox JSON export file and import data.
@@ -3358,34 +3367,25 @@ def import_firefox_json(json, add_bookmark_folder_as_tag=False, unique_tag=None)
         separator = 3
 
     def is_smart(entry):
-        result = False
         try:
-            d = [anno for anno in entry['annos'] if anno['name'] == "Places/SmartBookmark"]
-            result = bool(len(d))
+            return any(anno['name'] == "Places/SmartBookmark" for anno in entry['annos'])
         except Exception:
-            result = False
-
-        return result
+            return False
 
     def extract_desc(entry):
         try:
-            d = [
-                anno for anno in entry['annos']
-                if anno['name'] == "bookmarkProperties/description"
-            ]
-            return d[0]['value']
+            return next(anno['value'] for anno in entry['annos']
+                        if anno['name'] == "bookmarkProperties/description")
         except Exception:
             LOGDBG("ff_json: No description found for entry: {} {}".format(entry['uri'], entry['title']))
             return ""
 
     def extract_tags(entry):
-        tags = []
         try:
-            tags = entry['tags'].split(',')
+            return entry['tags'].split(',')
         except Exception:
             LOGDBG("ff_json: No tags found for entry: {} {}".format(entry['uri'], entry['title']))
-
-        return tags
+            return []
 
     def iterate_children(parent_folder, entry_list):
         for bm_entry in entry_list:
@@ -3422,7 +3422,7 @@ def import_firefox_json(json, add_bookmark_folder_as_tag=False, unique_tag=None)
                     tags = parse_tags(formatted_tags)
 
                     LOGDBG("ff_json: Entry found: {}, {}, {}, {} " .format(bm_entry['uri'], entry_title, tags, desc))
-                    yield (bm_entry['uri'], entry_title, tags, desc, 0, True, False)
+                    yield BookmarkData(bm_entry['uri'], entry_title, tags, desc)
 
                 except Exception as e:
                     LOGERR("ff_json: Error parsing entry '{}' Exception '{}'".format(entry_title, e))
@@ -3532,11 +3532,8 @@ def import_xbel(html_soup: BeautifulSoup, add_parent_folder_as_tag: bool, newtag
             else:
                 tag['tags'] = newtag
 
-        yield (
-            tag['href'], title_tag,
-            parse_tags([tag['tags']]) if tag.has_attr('tags') else None,
-            desc if not desc else desc.strip(), 0, True, False
-        )
+        tags = tag.get('tags')
+        yield BookmarkData(tag['href'], title_tag, tags and parse_tags([tags]), desc and desc.strip())
 
 def import_html(html_soup: BeautifulSoup, add_parent_folder_as_tag: bool, newtag: str, use_nested_folder_structure: bool = False):
     """Parse bookmark HTML.
@@ -3614,11 +3611,8 @@ def import_html(html_soup: BeautifulSoup, add_parent_folder_as_tag: bool, newtag
             else:
                 tag['tags'] = newtag
 
-        yield (
-            tag['href'], tag.string,
-            parse_tags([tag['tags']]) if tag.has_attr('tags') else None,
-            desc if not desc else desc.strip(), 0, True, False
-        )
+        tags = tag.get('tags')
+        yield BookmarkData(tag['href'], tag.string, tags and parse_tags([tags]), desc and desc.strip())
 
 
 def is_bad_url(url):
@@ -4148,7 +4142,7 @@ def edit_at_prompt(obj, nav, suggest=False):
         url, title, tags, desc = result
         if suggest:
             tags = obj.suggest_similar_tag(tags)
-        obj.add_rec(url, title, tags, desc)
+        obj.add_rec(url, title, tags, desc, fetch=True)
 
 
 def show_taglist(obj):
@@ -5624,7 +5618,7 @@ POSITIONAL ARGUMENTS:
                 url, title_in, tags, desc_in = result
                 if args.suggest:
                     tags = bdb.suggest_similar_tag(tags)
-                bdb.add_rec(url, title_in, tags, desc_in, _immutable(args))
+                bdb.add_rec(url, title_in, tags, desc_in, _immutable(args), fetch=True)
 
     # Add record
     if args.add is not None:
@@ -5662,7 +5656,7 @@ POSITIONAL ARGUMENTS:
         if edit_aborted is False:
             if args.suggest:
                 tags = bdb.suggest_similar_tag(tags)
-            bdb.add_rec(url, title_in, tags, desc_in, _immutable(args))
+            bdb.add_rec(url, title_in, tags, desc_in, _immutable(args), fetch=True)
 
     # Search record
     search_results = None

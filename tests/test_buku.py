@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from buku import DELIM, FIELD_FILTER, ALL_FIELDS, is_int, prep_tag_search, print_rec_with_filter
+from buku import DELIM, FIELD_FILTER, ALL_FIELDS, BookmarkData, is_int, prep_tag_search, print_rec_with_filter
 
 only_python_3_5 = pytest.mark.skipif(sys.version_info < (3, 5), reason="requires Python 3.5 or later")
 
@@ -565,13 +565,10 @@ def test_is_nongeneric_url(url, exp_res):
     assert res == exp_res
 
 
-@pytest.mark.parametrize(
-    "newtag, exp_res",
-    [
-        (None, ("http://example.com", "text1", ",", None, 0, True, False)),
-        ("tag1", ("http://example.com", "text1", ",tag1,", None, 0, True, False)),
-    ],
-)
+@pytest.mark.parametrize("newtag, exp_res", [
+    (None, BookmarkData("http://example.com", "text1", ",")),
+    ("tag1", BookmarkData("http://example.com", "text1", ",tag1,")),
+])
 def test_import_md(tmpdir, newtag, exp_res):
     from buku import import_md
 
@@ -581,35 +578,10 @@ def test_import_md(tmpdir, newtag, exp_res):
     assert res[0] == exp_res
 
 
-@pytest.mark.parametrize(
-    "newtag, exp_res",
-    [
-        (
-            None,
-            (
-                "http://example.com",
-                "text1",
-                ",tag1,:tag2,tag:3,tag4:,tag::5,tag:6:,",
-                None,
-                0,
-                True,
-                False,
-            ),
-        ),
-        (
-            "tag0",
-            (
-                "http://example.com",
-                "text1",
-                ",tag0,tag1,:tag2,tag:3,tag4:,tag::5,tag:6:,",
-                None,
-                0,
-                True,
-                False,
-            ),
-        ),
-    ],
-)
+@pytest.mark.parametrize("newtag, exp_res", [
+    (None, BookmarkData("http://example.com", "text1", ",tag1,:tag2,tag:3,tag4:,tag::5,tag:6:,")),
+    ("tag0", BookmarkData("http://example.com", "text1", ",tag0,tag1,:tag2,tag:3,tag4:,tag::5,tag:6:,")),
+])
 def test_import_org(tmpdir, newtag, exp_res):
     from buku import import_org
 
@@ -619,79 +591,29 @@ def test_import_org(tmpdir, newtag, exp_res):
     assert res[0] == exp_res
 
 
-@pytest.mark.parametrize(
-    "html_text, exp_res",
-    [
-        (
-            """<DT><A HREF="https://github.com/j" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2">GitHub</A>
-<DD>comment for the bookmark here
-<a> </a>""",
-            (
-                (
-                    "https://github.com/j",
-                    "GitHub",
-                    ",tag1,tag2,",
-                    "comment for the bookmark here",
-                    0,
-                    True,
-                    False,
-                ),
-            ),
-        ),
-        (
-            """DT><A HREF="https://github.com/j" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2">GitHub</A>
-            <DD>comment for the bookmark here
-            <a>second line of the comment here</a>""",
-            (
-                (
-                    "https://github.com/j",
-                    "GitHub",
-                    ",tag1,tag2,",
-                    "comment for the bookmark here",
-                    0,
-                    True,
-                    False,
-                ),
-            ),
-        ),
-        (
-            """DT><A HREF="https://github.com/j" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2">GitHub</A>
-            <DD>comment for the bookmark here
-            second line of the comment here
-            third line of the comment here
-            <DT><A HREF="https://news.com/" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2,tag3">News</A>""",
-            (
-                (
-                    "https://github.com/j",
-                    "GitHub",
-                    ",tag1,tag2,",
-                    "comment for the bookmark here\n            "
-                    "second line of the comment here\n            "
-                    "third line of the comment here",
-                    0,
-                    True,
-                    False,
-                ),
-                ("https://news.com/", "News", ",tag1,tag2,tag3,", None, 0, True, False),
-            ),
-        ),
-        (
-            """DT><A HREF="https://github.com/j" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2">GitHub</A>
-            <DD>comment for the bookmark here""",
-            (
-                (
-                    "https://github.com/j",
-                    "GitHub",
-                    ",tag1,tag2,",
-                    "comment for the bookmark here",
-                    0,
-                    True,
-                    False,
-                ),
-            ),
-        ),
-    ],
-)
+@pytest.mark.parametrize("html_text, exp_res", [
+    ("""<DT><A HREF="https://github.com/j" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2">GitHub</A>
+        <DD>comment for the bookmark here
+        <a> </a>""",
+     [BookmarkData("https://github.com/j", "GitHub", ",tag1,tag2,", "comment for the bookmark here")]),
+    ("""DT><A HREF="https://github.com/j" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2">GitHub</A>
+        <DD>comment for the bookmark here
+        <a>second line of the comment here</a>""",
+     [BookmarkData("https://github.com/j", "GitHub", ",tag1,tag2,", "comment for the bookmark here")]),
+    ("""DT><A HREF="https://github.com/j" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2">GitHub</A>
+        <DD>comment for the bookmark here
+        second line of the comment here
+        third line of the comment here
+        <DT><A HREF="https://news.com/" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2,tag3">News</A>""",
+     [BookmarkData("https://github.com/j", "GitHub", ",tag1,tag2,",
+                   "comment for the bookmark here\n        "
+                   "second line of the comment here\n        "
+                   "third line of the comment here"),
+      BookmarkData("https://news.com/", "News", ",tag1,tag2,tag3,")]),
+    ("""DT><A HREF="https://github.com/j" ADD_DATE="1360951967" PRIVATE="1" TAGS="tag1,tag2">GitHub</A>
+        <DD>comment for the bookmark here""",
+     [BookmarkData("https://github.com/j", "GitHub", ",tag1,tag2,", "comment for the bookmark here")]),
+])
 def test_import_html(html_text, exp_res):
     """test method."""
     from bs4 import BeautifulSoup
@@ -712,59 +634,24 @@ def test_import_html_and_add_parent():
     html_text = """<DT><H3>1s</H3>
 <DL><p>
 <DT><A HREF="http://example.com/"></A>"""
-    exp_res = ("http://example.com/", None, ",1s,", None, 0, True, False)
+    exp_res = BookmarkData("http://example.com/", None, ",1s,")
     html_soup = BeautifulSoup(html_text, "html.parser")
     res = list(import_html(html_soup, True, None))
     assert res[0] == exp_res
 
 
-@pytest.mark.parametrize(
-    "add_all_parent, exp_res",
-    [
-        (
-            True,
-            [
-                ("http://example11.com", None, ",folder11,", None, 0, True, False),
-                (
-                    "http://example12.com",
-                    None,
-                    ",folder11,folder12,",
-                    None,
-                    0,
-                    True,
-                    False,
-                ),
-                (
-                    "http://example13.com",
-                    None,
-                    ",folder11,folder12,folder13,tag3,tag4,",
-                    None,
-                    0,
-                    True,
-                    False,
-                ),
-                (
-                    "http://example121.com",
-                    None,
-                    ",folder11,folder12,folder121,",
-                    None,
-                    0,
-                    True,
-                    False,
-                ),
-            ],
-        ),
-        (
-            False,
-            [
-                ("http://example11.com", None, ",folder11,", None, 0, True, False),
-                ("http://example121.com", None, ",folder121,", None, 0, True, False),
-                ("http://example12.com", None, None, None, 0, True, False),
-                ("http://example13.com", None, ",folder13,tag3,tag4,", None, 0, True, False),
-            ],
-        ),
-    ],
-)
+@pytest.mark.parametrize("add_all_parent, exp_res", [
+    (True,
+     [BookmarkData("http://example11.com", None, ",folder11,"),
+      BookmarkData("http://example12.com", None, ",folder11,folder12,"),
+      BookmarkData("http://example13.com", None, ",folder11,folder12,folder13,tag3,tag4,"),
+      BookmarkData("http://example121.com", None, ",folder11,folder12,folder121,")]),
+    (False,
+     [BookmarkData("http://example11.com", None, ",folder11,"),
+      BookmarkData("http://example121.com", None, ",folder121,"),
+      BookmarkData("http://example12.com"),
+      BookmarkData("http://example13.com", None, ",folder13,tag3,tag4,")]),
+])
 def test_import_html_and_add_all_parent(add_all_parent, exp_res):
     from bs4 import BeautifulSoup
 
@@ -795,7 +682,7 @@ def test_import_html_and_add_all_parent(add_all_parent, exp_res):
 </DL><p></DT></DL>
 """
     html_soup = BeautifulSoup(html_text, "html.parser")
-    res = list(import_html(html_soup, True, None, add_all_parent))  # pylint: disable=E1121
+    res = list(import_html(html_soup, True, None, add_all_parent))
     assert check_import_html_results_contains(res, exp_res)
 
 
@@ -805,15 +692,12 @@ def test_import_html_and_new_tag():
     from buku import import_html
 
     html_text = """<DT><A HREF="https://github.com/j" TAGS="tag1,tag2">GitHub</A>
-<DD>comment for the bookmark here"""
-    exp_res = (
+        <DD>comment for the bookmark here"""
+    exp_res = BookmarkData(
         "https://github.com/j",
         "GitHub",
         ",tag1,tag2,tag3,",
         "comment for the bookmark here",
-        0,
-        True,
-        False,
     )
     html_soup = BeautifulSoup(html_text, "html.parser")
     res = list(import_html(html_soup, False, "tag3"))
