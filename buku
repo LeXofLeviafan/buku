@@ -1968,7 +1968,7 @@ class BukuDb:
 
         return parse_tags(tags)
 
-    def replace_tag(self, orig: str, new: List[str] = []) -> bool:
+    def replace_tag(self, orig: str, new: str = "", chatty: bool = False) -> bool:
         """Replace original tag by new tags in all records.
 
         Remove original tag if new tag is empty.
@@ -1977,8 +1977,10 @@ class BukuDb:
         ----------
         orig : str
             Original tag.
-        new : list
-            Replacement tags.
+        new : str
+            Replacement tags (comma-separated).
+        chatty : bool
+            If True, request user confirmation on deletion.
 
         Returns
         -------
@@ -1987,7 +1989,7 @@ class BukuDb:
         """
 
         orig = delim_wrap(orig)
-        newtags = parse_tags(new) if new else DELIM
+        newtags = parse_tags([new])
 
         if orig == newtags:
             print('Tags are same.')
@@ -1995,7 +1997,7 @@ class BukuDb:
 
         # Remove original tag from DB if new tagset reduces to delimiter
         if newtags == DELIM:
-            return self.delete_tag_at_index(0, orig)
+            return self.delete_tag_at_index(0, orig, chatty=chatty)
 
         # Update bookmarks with original tag
         query = 'SELECT id, tags FROM bookmarks WHERE tags LIKE ?'
@@ -5975,7 +5977,7 @@ POSITIONAL ARGUMENTS:
         if len(args.replace) == 1:
             bdb.delete_tag_at_index(0, args.replace[0])
         else:
-            bdb.replace_tag(args.replace[0], args.replace[1:])
+            bdb.replace_tag(args.replace[0], ' '.join(args.replace[1:]), chatty=True)
 
     # Export bookmarks
     if args.export is not None and not search_opted:

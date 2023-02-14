@@ -86,22 +86,22 @@ def test_tag_api(client):
     rd = client.get('/api/tags/tag1')
     assert rd.status_code == 200
     assert rd.get_json() == {'name': 'tag1', 'usage_count': 1}
-    rd = client.put('/api/tags/tag1', data={'tags': 'tag3,tag4'})
+    rd = client.put('/api/tags/tag1', data={'tags': 'tag3 tag4'})
     assert rd.status_code == 200
     assert rd.get_json() == response_template['success']
     rd = client.get('/api/tags')
     assert rd.status_code == 200
     assert rd.get_json() == {'tags': ['tag2', 'tag3 tag4']}
-    rd = client.put('/api/tags/tag2', data={'tags': 'tag5'})
+    rd = client.put('/api/tags/tag2', data={'tags': 'tag5,tag6'})
     assert rd.status_code == 200
     assert rd.get_json() == response_template['success']
     rd = client.get('/api/tags')
     assert rd.status_code == 200
-    assert rd.get_json() == {'tags': ['tag3 tag4', 'tag5']}
+    assert rd.get_json() == {'tags': ['tag3 tag4', 'tag5', 'tag6']}
     rd = client.get('/api/bookmarks/1')
     assert rd.status_code == 200
     assert rd.get_json() == {
-        'description': '', 'tags': ['tag3 tag4', 'tag5'], 'title': 'Google',
+        'description': '', 'tags': ['tag3 tag4', 'tag5', 'tag6'], 'title': 'Google',
         'url': 'http://google.com'}
 
 

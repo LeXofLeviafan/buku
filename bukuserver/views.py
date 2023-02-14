@@ -566,7 +566,7 @@ class TagModelView(BaseModelView):
             original_name = model.name
             form.populate_obj(model)
             self._on_model_change(form, model, False)
-            res = self.bukudb.replace_tag(original_name, [model.name])
+            res = self.bukudb.replace_tag(original_name, model.name)
             self.all_tags = self.bukudb.get_tag_all()
         except Exception as ex:
             if not self.handle_view_exception(ex):

@@ -706,13 +706,13 @@ class TestBukuDb(unittest.TestCase):
 
         # replacing tags
         with mock.patch("builtins.input", return_value="y"):
-            self.bdb.replace_tag("news", ["__01"])
+            self.bdb.replace_tag("news", "__01")
         with mock.patch("builtins.input", return_value="y"):
-            self.bdb.replace_tag("zażółć", ["__02,__03"])
+            self.bdb.replace_tag("zażółć", "__02,__03")
 
         # replacing tag which is also a substring of other tag
         with mock.patch("builtins.input", return_value="y"):
-            self.bdb.replace_tag("es", ["__04"])
+            self.bdb.replace_tag("es", "__04")
 
         # removing tags
         with mock.patch("builtins.input", return_value="y"):

@@ -104,9 +104,7 @@ class ApiTagView(MethodView):
         bukudb = get_bukudb()
         try:
             new_tags = request.data.get('tags')  # type: ignore
-            if new_tags:
-                new_tags = new_tags.split(',')
-            else:
+            if not new_tags:
                 return response_bad()
         except AttributeError as e:
             raise exceptions.ParseError(detail=str(e))
