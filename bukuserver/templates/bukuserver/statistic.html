@@ -16,23 +16,23 @@
 {% endblock %}
 
 {% block body %}
-<div class="container">
-  <form class="form-inline" action="{{ url_for('statistic.index') }}" method="POST">
+<div class="container mb-4">
+  <form class="mb-4" action="{{ url_for('statistic.index') }}" method="POST">
     Data created
     <span id="created" rel="tooltip" title="{{ datetime }}" data-timestamp={{ datetime.timestamp() }}>{{ datetime_text }}</span>
-    <button type="submit" class="btn btn-default btn-sm">refresh</button>
+    <button type="submit" class="btn btn-secondary btn-sm">refresh</button>
   </form>
   <h3>Netloc</h3>
 
   {% if netlocs %}
-  <div>
+  <div class="row">
     <div class="col-md-6">
       <canvas id="mostCommonChart" width="500" height="500"></canvas>
     </div>
 
     <div class="col-md-6">
       {% if netlocs.cropped %}
-      <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#netlocModal">
+      <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#netlocModal">
         View all
       </button>
       {% endif %}
@@ -65,12 +65,12 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <h4 class="modal-title" id="myModalLabel">Netloc ranking</h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         <div class="modal-body">
-          <table class="table table-condensed">
-            <thead class="bg-primary">
+          <table class="table table-sm">
+            <thead class="thead-dark">
               <tr>
                 <th>Rank</th>
                 <th>Netloc</th>
@@ -98,14 +98,14 @@
   <h3 class="col-md-12">Tag</h3>
 
   {% if tags %}
-  <div>
+  <div class="row">
     <div class="col-md-6">
       <canvas id="mostCommonTagChart" width="500" height="500"></canvas>
     </div>
 
     <div class="col-md-6">
       {% if tags.cropped %}
-      <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#tagRankModal">
+      <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#tagRankModal">
         View all
       </button>
       {% endif %}
@@ -140,12 +140,12 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <h4 class="modal-title" id="myModalLabel">Tag ranking</h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         <div class="modal-body">
-          <table class="table table-condensed">
-            <thead class="bg-primary">
+          <table class="table table-sm">
+            <thead class="thead-dark">
               <tr>
                 <th>Rank</th>
                 <th>Tag</th>
@@ -171,14 +171,14 @@
   <h3 class="col-md-12">Title (common)</h3>
 
   {% if titles %}
-  <div>
+  <div class="row">
     <div class="col-md-6">
       <canvas id="mostCommonTitleChart" width="500" height="500"></canvas>
     </div>
 
     <div class="col-md-6">
       {% if titles.cropped %}
-      <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#titleModal">
+      <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#titleModal">
         View all
       </button>
       {% endif %}
@@ -213,12 +213,12 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <h4 class="modal-title" id="myModalLabel">Common titles ranking</h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         <div class="modal-body">
-          <table class="table table-condensed">
-            <thead class="bg-primary">
+          <table class="table table-sm">
+            <thead class="thead-dark">
               <tr>
                 <th>Rank</th>
                 <th>Title</th>
@@ -248,7 +248,7 @@
   {{ super() }}
   <script>// sticky table headers in modals
     $('.modal-body').each(function () {
-      $('thead', this).css({top: '-' + $.css(this, 'padding-top')});
+      $('thead', this).css({top: `calc(-${$.css(this, 'padding-top')} - 1px)`});  // +border
     });
   </script>
   {{ buku.script('Chart.js') }}

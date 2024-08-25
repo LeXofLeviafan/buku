@@ -120,7 +120,7 @@ def create_app(db_file=None):
     app.jinja_env.filters['netloc'] = lambda x: urlparse(x).netloc  # pylint: disable=no-member
 
     admin = Admin(
-        app, name='buku server', template_mode='bootstrap3',
+        app, name='buku server', template_mode='bootstrap4',
         index_view=views.CustomAdminIndexView(
             template='bukuserver/home.html', url='/'
         )

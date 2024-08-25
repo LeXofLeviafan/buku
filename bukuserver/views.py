@@ -135,7 +135,7 @@ class BookmarkModelView(BaseModelView):
         if netloc and self.url_render_mode != 'netloc' and url_for_index_view_netloc:
             tag_links += [link(f'netloc:{netloc}', url_for_index_view_netloc, badge='success')]
         for tag in filter(None, model.tags.split(',')):
-            tag_links += [link(tag, get_index_view_url(flt0_tags_contain=tag.strip()), badge='default')]
+            tag_links += [link(tag, get_index_view_url(flt0_tags_contain=tag.strip()), badge='secondary')]
         res += [f'<div class="tag-list">{"".join(tag_links)}</div>']
         description = model.description and f'<div class="description">{escape(model.description)}</div>'
         if description:
@@ -146,7 +146,7 @@ class BookmarkModelView(BaseModelView):
     def get_detail_value(self, context, model, name):
         value = super().get_detail_value(context, model, name)
         if name == 'tags':
-            tags = (link(s.strip(), url_for('bookmark.index_view', flt0_tags_contain=s.strip()), badge='default')
+            tags = (link(s.strip(), url_for('bookmark.index_view', flt0_tags_contain=s.strip()), badge='secondary')
                     for s in (value or '').split(',') if s.strip())
             return Markup(f'<div class="tag-list">{"".join(tags)}</div>')
         if name == 'url':
@@ -179,7 +179,7 @@ class BookmarkModelView(BaseModelView):
     edit_modal_template = "bukuserver/bookmark_edit_modal.html"
     edit_template = "bukuserver/bookmark_edit.html"
     named_filter_urls = True
-    extra_css = ['/static/bukuserver/css/' + it for it in ('bookmark.css', 'modal.css')]
+    extra_css = ['/static/bukuserver/css/' + it for it in ('bookmark.css', 'modal.css', 'list.css')]
     extra_js = ['/static/bukuserver/js/' + it for it in ('page_size.js', 'last_page.js')]
     last_page = expose('/last-page')(last_page)
 
@@ -432,6 +432,7 @@ class TagModelView(BaseModelView):
     }
     list_template = 'bukuserver/tags_list.html'
     edit_template = "bukuserver/tag_edit.html"
+    extra_css = ['/static/bukuserver/css/list.css']
     extra_js = ['/static/bukuserver/js/' + it for it in ('page_size.js', 'last_page.js')]
     last_page = expose('/last-page')(last_page)
 
@@ -628,7 +629,7 @@ def format_value(field, bookmark, spacing=''):
 
 def link(text, url, new_tab=False, html=False, badge=''):
     target = ('' if not new_tab else ' target="_blank"')
-    cls = ('' if not badge else f' class="btn label label-{badge}"')
+    cls = ('' if not badge else f' class="btn badge badge-{badge}"')
     return f'<a{cls} href="{escape(url)}"{target}>{text if html else escape(text)}</a>'
 
 def sorted_counter(keys, *, min_count=0):

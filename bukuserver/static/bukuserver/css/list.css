@@ -1,0 +1,4 @@
+/* overriding icon-button text color with theme color */
+form.icon button {
+    color: inherit;
+}
