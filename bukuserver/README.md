@@ -134,7 +134,7 @@ _**²**_ if input is invalid, the default value will be used if defined
 
 _**³**_ `BUKUSERVER_DB_FILE` can be a DB name (plain filename without extension; cannot contain `.`). The specified DB with `.db` extension is located in default DB directory (which you can override with `BUKU_DEFAULT_DBDIR`).
 
-_**⁴**_ `BUKUSERVER_LOCALE` requires either `flask_babel` or `flask_babelex` installed
+_**⁴**_ `BUKUSERVER_LOCALE` requires `flask_babel` to be installed
 
 _**⁵**_ the value for `BUKUSERVER_REVERSE_PROXY_PATH` is recommended to include preceding slash and not have trailing slash (i.e. use `/foo` not `/foo/`)
 

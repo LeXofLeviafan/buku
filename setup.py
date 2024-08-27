@@ -38,7 +38,7 @@ tests_require = [
 
 server_require = [
     "arrow>=1.2.2",
-    "Flask-Admin>=1.6.1,<2",
+    "Flask-Admin>=2.0.0a4",
     "flask-paginate>=2022.1.8",
     "Flask-WTF>=1.0.1",
     "Flask>=2.2.2",
